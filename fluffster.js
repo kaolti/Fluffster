@@ -4,3 +4,4 @@ if (Meteor.isServer) {
 
   });
 }
+runsQ = new Mongo.Collection('runs');
