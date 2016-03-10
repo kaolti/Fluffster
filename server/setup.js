@@ -1,5 +1,6 @@
 //ccHistory = new Mongo.Collection('ccHistory');
 
+customers = new Mongo.Collection('customers');
 
 SyncedCron.config({
   // Log job run details to console

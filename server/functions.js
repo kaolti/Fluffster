@@ -1,14 +1,43 @@
 
 Meteor.methods({
   newUser: function (user) {
-    scheduleQuery(user);
+    checkCustomer(user);
   }
 })
 
 
 // Schedule Twitter search for user
 
+function checkCustomer(userId){
+
+  console.log("Checking customer with id: "+userId);
+
+  screenName = Meteor.users.findOne({ _id :userId}).services.twitter.screenName;
+  accessToken = Meteor.users.findOne({ _id :userId}).services.twitter.accessToken;
+  accessTokenSecret = Meteor.users.findOne({ _id :userId}).services.twitter.accessTokenSecret;
+
+  //console.log(customers.find({ _id: userId }))
+
+  if(!customers.findOne({screenName: screenName })){
+    console.log("NEW USER");
+    customers.insert({
+
+      _id:userId,
+      createdAt: new Date(),
+      screenName: screenName
+
+    });
+  } else {
+    console.log("Existing user");
+  }
+
+}
+
+
+
 function scheduleQuery(user){
+
+
 
   //Meteor.users.findOne(...).services.twitter
 
