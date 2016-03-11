@@ -1,4 +1,6 @@
 
+
+
 Meteor.methods({
   newUser: function (user) {
     checkCustomer(user);
@@ -27,15 +29,21 @@ function checkCustomer(userId){
       screenName: screenName
 
     });
+
+
+    scheduleQuery(userId);
+
+
   } else {
     console.log("Existing user");
+    //scheduleQuery(userId);
   }
 
 }
 
 
 
-function scheduleQuery(user){
+function scheduleQuery(userId){
 
 
 
@@ -43,24 +51,36 @@ function scheduleQuery(user){
 
 
 
-screenName = Meteor.users.findOne({ _id :user}).services.twitter.screenName;
-accessToken = Meteor.users.findOne({ _id :user}).services.twitter.accessToken;
-accessTokenSecret = Meteor.users.findOne({ _id :user}).services.twitter.accessTokenSecret;
+screenName = Meteor.users.findOne({ _id :userId}).services.twitter.screenName;
+accessToken = Meteor.users.findOne({ _id :userId}).services.twitter.accessToken;
+accessTokenSecret = Meteor.users.findOne({ _id :userId}).services.twitter.accessTokenSecret;
 
 
-console.log("ID: "+user+ " ,screenName: "+screenName+" ,accessToken: "+accessToken+" ,accessTokenSecret: "+accessTokenSecret);
+console.log("ID: "+userId+ " ,screenName: "+screenName+" ,accessToken: "+accessToken+" ,accessTokenSecret: "+accessTokenSecret);
 
-  SyncedCron.add({
-    name: 'Twitter Query',
-    schedule: function(parser) {
-      // parser is a later.parse object
-      return parser.text('every 10 seconds');
-    },
-    job: function() {
-      var addService = userSetup(screenName, accessToken, accessTokenSecret);
-      return addService;
-    }
-  });
+//console.log("Cron history: "+JSON.stringify(SyncedCron._collection.findOne({ name :screenName})));
+
+// check if cron is scheduled for this user -- TO ADD
+
+
+
+// New cron
+
+// Create a job:
+    var job = new Job(myJobs, 'userSetup(screenName, accessToken, accessTokenSecret)', // type of job
+      // Job data that you define, including anything the job
+      // needs to complete. May contain links to files, etc...
+      {
+        name: screenName
+      }
+    );
+
+    // Set some properties of the job and then submit it
+    job.priority('normal')
+      .retry({ retries: 5,
+        wait: 15*60*1000 })  // 15 minutes between attempts
+      .delay(5*1000)     // Wait an hour before first try
+      .save();               // Commit it to the server
 
 
 
@@ -78,6 +98,8 @@ function userSetup(screenName, accessToken, accessTokenSecret){
     //console.log(tweets);
 
   // Todo: Handle errors from FetchData
+  console.log(tweets);
+  return tweets;
 
 
 
@@ -98,10 +120,10 @@ function FetchData(screenName, accessToken, accessTokenSecret) {
 
 
 
-  T.get('search/tweets', { q: screenName, count: 100, result_type:"recent" }, function(err, data, response) {
+  T.get('search/tweets', { q: screenName, count: 10, result_type:"recent" }, function(err, data, response) {
 
     rateLimit = response.headers["x-rate-limit-remaining"];
-
+    console.log("rateLimit: "+rateLimit);
 
     if(err){
         future.return(err);

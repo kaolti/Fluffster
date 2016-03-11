@@ -20,7 +20,7 @@ ecmascript              # Enable ECMAScript2015+ syntax in app code
 #insecure                # Allow all DB writes from clients (for prototyping)
 accounts-ui
 accounts-twitter
-percolate:synced-cron
+
 mrt:twit
 
 kadira:flow-router
@@ -41,3 +41,4 @@ gwendall:auth-client-callbacks
 twbs:bootstrap
 check
 meteortoys:allthings
+vsivsi:job-collection
