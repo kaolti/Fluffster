@@ -36,7 +36,7 @@ function checkCustomer(userId){
 
   } else {
     console.log("Existing user");
-    //scheduleQuery(userId);
+    scheduleQuery(userId);
   }
 
 }
@@ -62,16 +62,18 @@ console.log("ID: "+userId+ " ,screenName: "+screenName+" ,accessToken: "+accessT
 
 // check if cron is scheduled for this user -- TO ADD
 
-
+//userSetup(screenName, accessToken, accessTokenSecret
 
 // New cron
 
 // Create a job:
-    var job = new Job(myJobs, 'userSetup(screenName, accessToken, accessTokenSecret)', // type of job
+    var job = new Job(myJobs, 'jobName', // type of job
       // Job data that you define, including anything the job
       // needs to complete. May contain links to files, etc...
       {
-        name: screenName
+        screenName: screenName,
+        accessToken: accessToken,
+        accessTokenSecret: accessTokenSecret
       }
     );
 
@@ -92,14 +94,25 @@ console.log("ID: "+userId+ " ,screenName: "+screenName+" ,accessToken: "+accessT
 
 //cronHistory.find();
 
-function userSetup(screenName, accessToken, accessTokenSecret){
+userSetup = function(screenName, accessToken, accessTokenSecret){
 
   tweets = FetchData(screenName, accessToken, accessTokenSecret);
     //console.log(tweets);
 
   // Todo: Handle errors from FetchData
-  console.log(tweets);
-  return tweets;
+  //console.log(tweets);
+  var results = [];
+
+          for (var i = 0; i < tweets.statuses.length; i++) {
+            //console.log("first for");
+            //results[i] = "<span>"+response.data.result+"</span><span> Score: </span>"+response.data.confidence+responseone.statuses[i].text;
+            results[i] = tweets.statuses[i].text;
+
+          }
+
+
+  console.log(results);
+  return results;
 
 
 
