@@ -3,12 +3,13 @@
 
 Meteor.methods({
   newUser: function (user) {
+    // check if user is customer
     checkCustomer(user);
   }
 })
 
 
-// Schedule Twitter search for user
+// function checks if userID is in customers collection
 
 function checkCustomer(userId){
 
@@ -18,15 +19,18 @@ function checkCustomer(userId){
   accessToken = Meteor.users.findOne({ _id :userId}).services.twitter.accessToken;
   accessTokenSecret = Meteor.users.findOne({ _id :userId}).services.twitter.accessTokenSecret;
 
-  //console.log(customers.find({ _id: userId }))
+
 
   if(!customers.findOne({screenName: screenName })){
-    console.log("NEW USER");
+
+    console.log("Logged in user not a customer");
+    console.log("Adding to customers collection");
     customers.insert({
 
       _id:userId,
       createdAt: new Date(),
-      screenName: screenName
+      screenName: screenName,
+      lastTweets: {}
 
     });
 
@@ -35,7 +39,7 @@ function checkCustomer(userId){
 
 
   } else {
-    console.log("Existing user");
+    console.log("Logged in user is already a customer");
     scheduleQuery(userId);
   }
 
@@ -62,27 +66,39 @@ console.log("ID: "+userId+ " ,screenName: "+screenName+" ,accessToken: "+accessT
 
 // check if cron is scheduled for this user -- TO ADD
 
-//userSetup(screenName, accessToken, accessTokenSecret
+  if(myJobs.findOne({
+    "data.screenName":screenName
+  })){
+    console.log("A job is already set up");
+  } else {
+    console.log("Setting up new job");
 
-// New cron
 
-// Create a job:
-    var job = new Job(myJobs, 'jobName', // type of job
-      // Job data that you define, including anything the job
-      // needs to complete. May contain links to files, etc...
-      {
-        screenName: screenName,
-        accessToken: accessToken,
-        accessTokenSecret: accessTokenSecret
-      }
-    );
+    // Create a job:
+        var job = new Job(myJobs, 'jobName', // type of job
+          // Job data that you define, including anything the job
+          // needs to complete. May contain links to files, etc...
+          {
+            screenName: screenName,
+            accessToken: accessToken,
+            accessTokenSecret: accessTokenSecret
+          }
+        );
 
-    // Set some properties of the job and then submit it
-    job.priority('normal')
-      .retry({ retries: 5,
-        wait: 15*60*1000 })  // 15 minutes between attempts
-      .delay(5*1000)     // Wait an hour before first try
-      .save();               // Commit it to the server
+        // Set some properties of the job and then submit it
+        job.priority('normal')
+          .retry({ retries: 5,
+            wait: 15*60*1000 })  // 15 minutes between attempts
+          .repeat({
+            schedule: myJobs.later.parse.text('every day')   // Rerun this job every 5 minutes
+          })
+          .after(new Date())
+          .save();               // Commit it to the server
+
+
+
+  }
+
 
 
 
@@ -94,13 +110,67 @@ console.log("ID: "+userId+ " ,screenName: "+screenName+" ,accessToken: "+accessT
 
 //cronHistory.find();
 
-userSetup = function(screenName, accessToken, accessTokenSecret){
+
+Meteor.methods({
+
+
+    'checkSentiment': function(tweets,screenName){
+
+      var future = new Future();
+
+      HTTP.post( 'http://sentiment.vivekn.com/api/batch/', {
+        data: tweets
+
+       }, function(error,response) {
+        if ( error ) {
+           console.log( error );
+           future.return(err);
+         } else {
+           console.log(response.data.length);
+           //callback(response.data);
+
+          //  customers.update({screenName: screenName},
+          //    {
+          //
+          //      $push: {lastTweets: {tweet:data, score:{}}}
+           //
+          //      //$set: {lastScores: response.data}
+          //    });
+
+
+
+           future.return(response.data);
+         }
+
+
+
+      });
+
+      return future.wait();
+
+    }
+
+
+
+
+});
+
+
+
+
+
+
+
+userSetup = function(screenName, accessToken, accessTokenSecret, callback){
 
   tweets = FetchData(screenName, accessToken, accessTokenSecret);
     //console.log(tweets);
 
   // Todo: Handle errors from FetchData
+
+  console.log("Tweets returned: ");
   //console.log(tweets);
+
   var results = [];
 
           for (var i = 0; i < tweets.statuses.length; i++) {
@@ -111,16 +181,17 @@ userSetup = function(screenName, accessToken, accessTokenSecret){
           }
 
 
-  console.log(results);
-  return results;
+  //console.log(results);
+  callback(results);
 
 
 
 }
 
 
-function FetchData(screenName, accessToken, accessTokenSecret) {
+var FetchData = function(screenName, accessToken, accessTokenSecret) {
 
+  console.log("fetch data now!")
 
   var future = new Future();
 
@@ -133,16 +204,18 @@ function FetchData(screenName, accessToken, accessTokenSecret) {
 
 
 
-  T.get('search/tweets', { q: screenName, count: 10, result_type:"recent" }, function(err, data, response) {
+  T.get('search/tweets', { q: screenName+" -filter:retweets", count: 100, result_type:"recent" }, function(err, data, response) {
 
     rateLimit = response.headers["x-rate-limit-remaining"];
     console.log("rateLimit: "+rateLimit);
 
     if(err){
         future.return(err);
+        console.log("Error:");
+        console.log(err);
       } else {
-        // console.log("Data length:");
-        // console.log(data.statuses.length);
+        console.log("Data length:");
+        console.log(data.statuses.length);
         future.return(data);
 
       }

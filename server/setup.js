@@ -45,10 +45,71 @@ customers = new Mongo.Collection('customers');
 
         var jobData = job.data;
 
-        userSetup(jobData.screenName, jobData.accessToken, jobData.accessTokenSecret);
+        userSetup(jobData.screenName, jobData.accessToken, jobData.accessTokenSecret,function(data) {
+
+          console.log("checking if there's data");
+
+            if(data){
+
+              // handle data received
+
+              console.log("there is data, updating customer data");
 
 
-          cb();
+
+              Meteor.call('checkSentiment', customers.find().fetch()[0].lastTweets, customers.find().fetch()[0].screenName, function(error, result){
+
+                if(error){
+                  console.log("Error checking sentiment");
+
+                } else {
+
+
+                  console.log("WE GOT A RESULT BITCH! Well what is it?");
+                  console.log(result);
+
+                  // Adding tweets and scores to collection
+
+                  for (var i = 0; i<= result.length; i++){
+
+                    customers.update({screenName: jobData.screenName},
+                      {
+                        $push: {lastTweets: {tweet:data[i], score:result[i]}}
+                      });
+
+                    }
+
+
+                }
+
+
+              });
+
+
+
+
+
+
+
+
+
+
+
+
+              console.log(data);
+
+              job.done();
+            } else {
+              job.log("Job failed",
+                {level: 'warning'});
+            }
+            // Be sure to invoke the callback
+            // when work on this job has finished
+            cb();
+          });
+
+
+
 
       }
     );
