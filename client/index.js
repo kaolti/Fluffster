@@ -62,7 +62,14 @@ Template.dashboard.helpers({
   lastCompleted: function(){
     //return JSON.stringify(myJobs.find("message").fetch());
 
-var lastCompletedDate = myJobs.find({status: "completed"}, {sort: {updated: -1, limit: 1}}).fetch()[0].updated;
+//var lastCompletedDate = myJobs.find({status: "completed"}, {sort: {updated: -1, limit: 1}}).fetch()[0].updated;
+
+  if(myJobs.find({status: "completed"}, {sort: {updated: -1, limit: 1}}).fetch()[0]){
+    lastCompletedDate = myJobs.find({status: "completed"}, {sort: {updated: -1, limit: 1}}).fetch()[0].updated
+  } else {
+    lastCompletedDate = new Date();
+  }
+
 
 // console.log(JSON.stringify(myJobs.find({status: "completed"},{limit: 1}).fetch()._id));
 // console.log(myJobs.find({status: "completed"},{limit: 1}).fetch()._id);
@@ -82,26 +89,38 @@ var lastCompletedDate = myJobs.find({status: "completed"}, {sort: {updated: -1, 
   lastFetch : function() {
 
     //var tweets = customers.find().fetch()[0].lastTweets;
-    var tweets = customers.find().fetch()[0].lastTweets[0];
+
+
+    // THIS GRABS FIRST CUSTOMER - TO DO
+    var tweets = customers.find().fetch()[0].lastTweets[0].tweet;
 
     return tweets;
   },
 
   lastScores: function() {
 
-    var scores = JSON.stringify(customers.find().fetch()[0].lastScores);
+    // THIS GRABS FIRST CUSTOMER - TO DO
+    var scores = JSON.stringify(customers.find().fetch()[0].lastTweets[0].score.result);
 
     if(!scores) {
 
 
         console.log("There's no scores. How?");
-        console.log(customers.find().fetch()[0].lastTweets.length);
+        //console.log(customers.find().fetch()[0].lastTweets.length);
 
 
 
     }
 
     return scores;
+
+  },
+
+  overallScore: function(){
+
+    Meteor.call('calculateScore', function(error, result){
+      return result;
+    });
 
   }
 

@@ -70,9 +70,9 @@ customers = new Mongo.Collection('customers');
 
                   // Adding tweets and scores to collection
 
-                  for (var i = 0; i<= result.length; i++){
+                  for (var i = 0; i< result.length; i++){
 
-                    customers.update({screenName: jobData.screenName},
+                    customers.update({screenName: screenName},
                       {
                         $push: {lastTweets: {tweet:data[i], score:result[i]}}
                       });

@@ -30,7 +30,7 @@ function checkCustomer(userId){
       _id:userId,
       createdAt: new Date(),
       screenName: screenName,
-      lastTweets: {}
+      lastTweets: []
 
     });
 
@@ -64,7 +64,8 @@ console.log("ID: "+userId+ " ,screenName: "+screenName+" ,accessToken: "+accessT
 
 //console.log("Cron history: "+JSON.stringify(SyncedCron._collection.findOne({ name :screenName})));
 
-// check if cron is scheduled for this user -- TO ADD
+
+  // check if cron is scheduled for this user
 
   if(myJobs.findOne({
     "data.screenName":screenName
@@ -89,12 +90,24 @@ console.log("ID: "+userId+ " ,screenName: "+screenName+" ,accessToken: "+accessT
         job.priority('normal')
           .retry({ retries: 5,
             wait: 15*60*1000 })  // 15 minutes between attempts
+          .delay(1000)
           .repeat({
-            schedule: myJobs.later.parse.text('every day')   // Rerun this job every 5 minutes
+            schedule: myJobs.later.parse.cron('15 10 ? * *')   // Run every day at 10:15 AM
           })
           .after(new Date())
           .save();               // Commit it to the server
 
+
+
+          // Fetch data manually
+
+          fetchManually(screenName, accessToken, accessTokenSecret, function(status){
+
+            if(status){
+            console.log("Data fetched");
+            }
+
+          });
 
 
   }
@@ -106,6 +119,73 @@ console.log("ID: "+userId+ " ,screenName: "+screenName+" ,accessToken: "+accessT
 
 
 
+fetchManually = function (screenName, accessToken, accessTokenSecret, callback){
+
+
+  userSetup(screenName, accessToken, accessTokenSecret,function(data) {
+
+    console.log("checking if there's data");
+
+      if(data){
+
+        // handle data received
+
+        console.log("there is data, updating customer data");
+
+
+
+        Meteor.call('checkSentiment', data, screenName, function(error, result){
+
+          if(error){
+            console.log("Error checking sentiment");
+
+          } else {
+
+
+            console.log("WE GOT A RESULT BITCH! Well what is it?");
+            console.log(result);
+
+            // Adding tweets and scores to collection
+
+            // customers.update({screenName: screenName},
+            //   {
+            //     $push: {"lastTweets": [{"tweet":data[1], "score":result[1]}]}
+            //   });
+
+            for (var i = 0; i< result.length; i++){
+
+              customers.update({screenName: screenName},
+                {
+                  $push: {lastTweets: {tweet:data[i], score:result[i]}}
+                });
+
+              }
+
+
+          }
+
+
+        });
+
+
+        return true;
+        console.log(data);
+
+
+      } else {
+
+        return false;
+        console.log("no data");
+
+      }
+      // Be sure to invoke the callback
+      // when work on this job has finished
+
+    });
+
+
+}
+
 
 
 //cronHistory.find();
@@ -116,38 +196,16 @@ Meteor.methods({
 
     'checkSentiment': function(tweets,screenName){
 
-      var future = new Future();
+      // Sync http.post call - no need for future or wrapasync
 
-      HTTP.post( 'http://sentiment.vivekn.com/api/batch/', {
+      return HTTP.post( 'http://sentiment.vivekn.com/api/batch/', {
         data: tweets
+      }).data;
 
-       }, function(error,response) {
-        if ( error ) {
-           console.log( error );
-           future.return(err);
-         } else {
-           console.log(response.data.length);
-           //callback(response.data);
+    },
 
-          //  customers.update({screenName: screenName},
-          //    {
-          //
-          //      $push: {lastTweets: {tweet:data, score:{}}}
-           //
-          //      //$set: {lastScores: response.data}
-          //    });
-
-
-
-           future.return(response.data);
-         }
-
-
-
-      });
-
-      return future.wait();
-
+    'calculateScore': function(){
+      
     }
 
 
