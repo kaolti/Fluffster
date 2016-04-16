@@ -205,7 +205,12 @@ Meteor.methods({
     },
 
     'calculateScore': function(){
-      
+
+      // TO DO
+      // Calculate average score based on data in lastTweets
+      // average score will be saved in collection under customer.scores - scores value will store value, score.date to store date of saving
+
+
     }
 
 

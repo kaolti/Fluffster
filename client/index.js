@@ -118,9 +118,12 @@ Template.dashboard.helpers({
 
   overallScore: function(){
 
-    Meteor.call('calculateScore', function(error, result){
-      return result;
-    });
+
+    // instead of using the return value from calculateScore, we'll read the score from the collection.
+
+    // Meteor.call('calculateScore', function(error, result){
+    //   return result;
+    // });
 
   }
 
